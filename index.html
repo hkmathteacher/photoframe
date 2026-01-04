@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WebAR 相機濾鏡 (9:16)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #000;
+            margin: 0;
+            overflow: hidden;
+            touch-action: none;
+            /* Flex 用於垂直水平置中 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* 這是核心容器，強制保持 9:16 比例 */
+        #app-frame {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 100vw;
+            max-height: 100vh;
+            /* 關鍵：利用 aspect-ratio 鎖定比例 */
+            aspect-ratio: 9 / 16; 
+            background: #000;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        }
+
+        /* 如果螢幕太寬（電腦版），限制最大高度以免過大，並保持比例 */
+        @media (min-aspect-ratio: 9/16) {
+            #app-frame {
+                height: 100vh;
+                width: auto; /* 寬度自動計算 */
+            }
+        }
+        /* 如果螢幕太長（某些超長手機），限制最大寬度 */
+        @media (max-aspect-ratio: 9/16) {
+            #app-frame {
+                width: 100vw;
+                height: auto; /* 高度自動計算 */
+            }
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .flash-effect {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 50;
+            transition: opacity 0.1s ease-out;
+        }
+        .flash-active {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 隱藏元素 -->
+    <video id="video" playsinline muted autoplay class="hidden"></video>
+    
+    <!-- 修改處 1: 在這裡加入 src="你的圖片路徑" -->
+    <!-- 如果圖片在同一個資料夾，就寫 "./filename.png" -->
+    <!-- 如果是網路圖片，就寫 "https://example.com/filter.png" -->
+    <img id="overlay-img" src="./cat1.png" class="hidden" crossorigin="anonymous">
+
+    <!-- 核心應用框架 (9:16) -->
+    <div id="app-frame">
+        <canvas id="canvas"></canvas>
+        <div id="flash" class="flash-effect"></div>
+
+        <!-- 頂部控制列 -->
+        <div class="absolute top-6 left-0 w-full px-6 flex justify-between items-center z-20">
+            <label class="bg-black/40 backdrop-blur-md p-2 rounded-full px-4 text-xs flex items-center gap-2 cursor-pointer border border-white/20 text-white hover:bg-black/60 transition">
+                <i class="fas fa-image text-yellow-400"></i>
+                <span>更換濾鏡</span>
+                <input type="file" id="upload-filter" accept="image/png" class="hidden">
+            </label>
+            
+            <button id="switch-camera" class="bg-black/40 backdrop-blur-md w-10 h-10 rounded-full flex items-center justify-center border border-white/20 active:scale-95 transition text-white hover:bg-black/60">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+
+        <!-- 底部控制列 -->
+        <div class="absolute bottom-12 left-0 w-full flex justify-center items-center z-20">
+            <button id="shutter-btn" class="w-20 h-20 rounded-full border-4 border-white bg-white/20 backdrop-blur-sm flex items-center justify-center active:scale-90 transition duration-150 group">
+                <div class="w-16 h-16 bg-white rounded-full shadow-lg group-hover:scale-95 transition"></div>
+            </button>
+        </div>
+        
+        <!-- 提示訊息 -->
+        <div id="message" class="hidden absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/80 px-6 py-4 rounded-xl text-center z-50 backdrop-blur-md border border-white/10 text-white">
+            <p id="msg-text">圖片已下載</p>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const overlayImg = document.getElementById('overlay-img');
+        const shutterBtn = document.getElementById('shutter-btn');
+        const switchBtn = document.getElementById('switch-camera');
+        const flash = document.getElementById('flash');
+        const fileInput = document.getElementById('upload-filter');
+        
+        let animationId;
+        let currentStream;
+        let facingMode = 'user';
+
+        // 設定固定解析度：1080x1920 (9:16 HD)
+        const CANVAS_WIDTH = 1080;
+        const CANVAS_HEIGHT = 1920;
+
+        // 初始化畫布尺寸
+        canvas.width = CANVAS_WIDTH;
+        canvas.height = CANVAS_HEIGHT;
+
+        // 預設濾鏡生成 (尺寸對應 1080x1920)
+        function createDefaultOverlay() {
+            const tempCanvas = document.createElement('canvas');
+            // ... (省略內部代碼) ...
+            overlayImg.src = tempCanvas.toDataURL();
+        }
+        
+        // 修改處 2: 註解掉這行，不要讓它執行
+        // 這樣程式就會使用上面 HTML 設定的 src圖片，而不是產生預設圖
+        // createDefaultOverlay(); 
+
+        async function startCamera() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+
+            const constraints = {
+                audio: false,
+                video: {
+                    facingMode: facingMode,
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 } 
+                }
+            };
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                currentStream = stream;
+                video.srcObject = stream;
+                video.onloadedmetadata = () => {
+                    video.play();
+                    drawFrame();
+                };
+            } catch (err) {
+                console.error(err);
+                showMsg("無法開啟相機 (需 HTTPS)");
+            }
+        }
+
+        function drawFrame() {
+            if (!video.paused && !video.ended) {
+                // 裁切邏輯：將任意比例的 Video 填滿 9:16 的 Canvas
+                const videoRatio = video.videoWidth / video.videoHeight;
+                const targetRatio = CANVAS_WIDTH / CANVAS_HEIGHT; // 0.5625
+                
+                let sWidth, sHeight, sx, sy;
+
+                if (targetRatio > videoRatio) {
+                    // 畫布比影片「胖」 (影片太瘦長)，裁切上下 (理論上很少見，除非影片超長)
+                    sWidth = video.videoWidth;
+                    sHeight = video.videoWidth / targetRatio;
+                    sx = 0;
+                    sy = (video.videoHeight - sHeight) / 2;
+                } else {
+                    // 畫布比影片「瘦」 (影片比較寬，例如 4:3 或 16:9)，裁切左右
+                    // 這是最常見的情況
+                    sWidth = video.videoHeight * targetRatio;
+                    sHeight = video.videoHeight;
+                    sx = (video.videoWidth - sWidth) / 2;
+                    sy = 0;
+                }
+
+                ctx.save();
+                if (facingMode === 'user') {
+                    ctx.translate(CANVAS_WIDTH, 0);
+                    ctx.scale(-1, 1);
+                }
+
+                ctx.drawImage(
+                    video, 
+                    sx, sy, sWidth, sHeight, 
+                    0, 0, CANVAS_WIDTH, CANVAS_HEIGHT
+                );
+
+                ctx.restore();
+
+                // 繪製濾鏡邏輯更新：保持比例置中 (Contain 模式)
+                if (overlayImg.complete && overlayImg.naturalHeight !== 0) {
+                    const imgW = overlayImg.naturalWidth;
+                    const imgH = overlayImg.naturalHeight;
+                    const imgRatio = imgW / imgH;
+                    const canvasRatio = CANVAS_WIDTH / CANVAS_HEIGHT;
+
+                    let renderW, renderH, renderX, renderY;
+
+                    // 判斷圖片比例與畫布比例的關係
+                    if (imgRatio > canvasRatio) {
+                        // 圖片比較寬 (Landscape 或較寬的直式)：以「寬度」填滿為準
+                        renderW = CANVAS_WIDTH;
+                        renderH = CANVAS_WIDTH / imgRatio;
+                        renderX = 0;
+                        renderY = (CANVAS_HEIGHT - renderH) / 2; // 垂直置中
+                    } else {
+                        // 圖片比較瘦 (更細長的直式)：以「高度」填滿為準
+                        renderH = CANVAS_HEIGHT;
+                        renderW = CANVAS_HEIGHT * imgRatio;
+                        renderX = (CANVAS_WIDTH - renderW) / 2; // 水平置中
+                        renderY = 0;
+                    }
+
+                    // 繪製
+                    ctx.drawImage(overlayImg, renderX, renderY, renderW, renderH);
+                }
+                
+                animationId = requestAnimationFrame(drawFrame);
+            }
+        }
+
+        shutterBtn.addEventListener('click', () => {
+            flash.classList.add('flash-active');
+            setTimeout(() => flash.classList.remove('flash-active'), 100);
+            cancelAnimationFrame(animationId);
+            
+            try {
+                // 直接輸出 1080x1920 的圖
+                const dataURL = canvas.toDataURL('image/jpeg', 0.92);
+                const link = document.createElement('a');
+                link.download = `photo-9-16-${Date.now()}.jpg`;
+                link.href = dataURL;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showMsg("照片已儲存");
+            } catch (e) {
+                showMsg("儲存失敗");
+            }
+            drawFrame();
+        });
+
+        switchBtn.addEventListener('click', () => {
+            facingMode = facingMode === 'user' ? 'environment' : 'user';
+            startCamera();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    overlayImg.src = event.target.result;
+                    showMsg("濾鏡已更新");
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function showMsg(text) {
+            const msgBox = document.getElementById('message');
+            document.getElementById('msg-text').innerText = text;
+            msgBox.classList.remove('hidden');
+            setTimeout(() => msgBox.classList.add('hidden'), 2000);
+        }
+
+        window.addEventListener('load', startCamera);
+    </script>
+</body>
+</html>
