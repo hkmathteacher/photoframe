@@ -73,7 +73,7 @@
     <div id="loading-screen" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center">
         <!-- 這裡使用您上傳的圖片作為 Loading 圖 -->
         <!-- 請確保圖片檔案與 html 在同一目錄下 -->
-        <img src="./loading.jpg" class="w-1/2 max-w-[200px] object-contain animate-pulse mb-4" alt="Loading...">
+        <img src="./loading.png" class="w-1/2 max-w-[200px] object-contain animate-pulse mb-4" alt="Loading...">
         
         <!-- 下方的載入文字 -->
         <div class="flex items-center gap-2 text-white/70 text-sm tracking-widest uppercase">
@@ -140,7 +140,7 @@
             return c.toDataURL();
         });
         
-        let useDemo = true; 
+        let useDemo = false; 
 
         // --- 變數宣告 ---
         let currentFilterIndex = 0;
