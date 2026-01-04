@@ -2,8 +2,17 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WebAR 相機濾鏡 (9:16)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>WebAR 相機</title>
+    
+    <!-- PWA 設定: 讓加入主畫面後隱藏瀏覽器介面 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    
+    <!-- 嵌入式 Manifest: 輔助 Android 隱藏網址列 -->
+    <link rel="manifest" href='data:application/manifest+json,{"display":"standalone","name":"WebAR Camera","short_name":"Camera","start_url":".","background_color":"#000000","theme_color":"#000000","icons":[{"src":"./loading.png","sizes":"512x512","type":"image/png"}]}'>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -17,6 +26,8 @@
             justify-content: center;
             height: 100vh;
             width: 100vw;
+            /* 防止 iOS 回彈效果 */
+            overscroll-behavior: none;
         }
 
         #app-frame {
@@ -28,7 +39,8 @@
             aspect-ratio: 9 / 16; 
             background: #000;
             overflow: hidden;
-            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            /* 移除陰影，讓全螢幕體驗更像原生 App */
+            /* box-shadow: 0 0 50px rgba(0,0,0,0.5); */
         }
 
         @media (min-aspect-ratio: 9/16) {
@@ -58,25 +70,34 @@
         }
         .flash-active { opacity: 1; }
 
-        /* Loading Screen Transition */
         .fade-out {
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.8s ease-out;
         }
+        
+        /* 確保 Loading 圖片是全螢幕覆蓋 */
+        .loading-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* 關鍵：裁切填滿 */
+            z-index: 1;
+        }
     </style>
 </head>
 <body>
 
-    <!-- Loading Screen (新增部分) -->
-    <!-- z-index 設為 100 確保蓋在最上面 -->
-    <div id="loading-screen" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center">
-        <!-- 這裡使用您上傳的圖片作為 Loading 圖 -->
-        <!-- 請確保圖片檔案與 html 在同一目錄下 -->
-        <img src="./loading.png" class="w-1/2 max-w-[200px] object-contain animate-pulse mb-4" alt="Loading...">
+    <!-- Loading Screen (修改版) -->
+    <div id="loading-screen" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-end pb-20">
         
-        <!-- 下方的載入文字 -->
-        <div class="flex items-center gap-2 text-white/70 text-sm tracking-widest uppercase">
+        <!-- 全螢幕背景圖 -->
+        <img src="./loading.png" class="loading-bg animate-pulse" alt="Loading...">
+        
+        <!-- 下方的載入文字 (浮在圖片上層) -->
+        <div class="relative z-10 flex items-center gap-2 text-white/90 text-sm tracking-widest uppercase bg-black/30 px-4 py-2 rounded-full backdrop-blur-sm">
             <i class="fas fa-spinner fa-spin"></i>
             <span>Starting Camera...</span>
         </div>
@@ -84,7 +105,6 @@
 
     <video id="video" playsinline muted autoplay class="hidden"></video>
     
-    <!-- 濾鏡圖片元件 -->
     <img id="overlay-img" class="hidden" crossorigin="anonymous">
 
     <div id="app-frame">
@@ -92,7 +112,7 @@
         <div id="flash" class="flash-effect"></div>
 
         <!-- 頂部控制列 -->
-        <div class="absolute top-6 right-6 z-20">
+        <div class="absolute top-8 right-6 z-20"> <!-- 調整 top 以避開 iOS 瀏海 -->
             <button id="switch-camera" class="bg-black/40 backdrop-blur-md w-10 h-10 rounded-full flex items-center justify-center border border-white/20 active:scale-95 transition text-white hover:bg-black/60 shadow-lg">
                 <i class="fas fa-sync-alt"></i>
             </button>
@@ -100,7 +120,6 @@
 
         <!-- 底部控制列 -->
         <div class="absolute bottom-12 left-0 w-full flex justify-center items-center z-20">
-            <!-- 拍照按鈕 -->
             <button id="shutter-btn" class="w-16 h-16 rounded-full border-4 border-white bg-white/20 backdrop-blur-sm flex items-center justify-center active:scale-90 transition duration-150 group shadow-lg">
                 <div class="w-12 h-12 bg-white rounded-full shadow-lg group-hover:scale-95 transition"></div>
             </button>
@@ -118,13 +137,13 @@
     </div>
 
     <script>
-        // --- 1. 濾鏡設定區 ---
+        // --- 1. 濾鏡設定區 (已更新) ---
         const filterList = [
             './cat1.png', 
             './cat2.png'
         ];
         
-        // Demo 濾鏡產生器 (若無真實圖片時使用)
+        // Demo 濾鏡產生器 (備用)
         const demoColors = ['#FF0000', '#00FF00', '#0000FF'];
         const demoFilters = demoColors.map((color, i) => {
             const c = document.createElement('canvas');
@@ -140,6 +159,7 @@
             return c.toDataURL();
         });
         
+        // 關閉 Demo 模式
         let useDemo = false; 
 
         // --- 變數宣告 ---
@@ -152,7 +172,7 @@
         const switchBtn = document.getElementById('switch-camera');
         const flash = document.getElementById('flash');
         const appFrame = document.getElementById('app-frame');
-        const loadingScreen = document.getElementById('loading-screen'); // 取得 Loading 元素
+        const loadingScreen = document.getElementById('loading-screen'); 
         
         let animationId;
         let currentStream;
@@ -182,14 +202,12 @@
 
         // --- Loading 畫面控制 ---
         function hideLoading() {
-            // 延遲一點點再消失，確保使用者有看到您的 Logo
             setTimeout(() => {
                 loadingScreen.classList.add('fade-out');
-                // 動畫結束後完全移除 DOM 元素
                 setTimeout(() => {
                     loadingScreen.style.display = 'none';
                 }, 800); 
-            }, 1000); // 至少顯示 1 秒
+            }, 1000); 
         }
 
         // --- 滑動手勢偵測 ---
@@ -250,14 +268,11 @@
                 video.onloadedmetadata = () => {
                     video.play();
                     drawFrame();
-                    
-                    // 當相機準備好時，觸發隱藏 Loading 畫面
                     hideLoading();
                 };
             } catch (err) {
                 console.error(err);
                 showMsg("無法開啟相機");
-                // 即使失敗也要隱藏 loading，不然會卡死在黑畫面
                 document.querySelector('#loading-screen span').innerText = "相機存取失敗 (需 HTTPS)";
                 document.querySelector('#loading-screen i').classList.remove('fa-spin', 'fa-spinner');
                 document.querySelector('#loading-screen i').classList.add('fa-exclamation-triangle', 'text-red-500');
@@ -350,7 +365,7 @@
             setTimeout(() => {
                 const hint = document.getElementById('swipe-hint');
                 if(hint) hint.classList.add('hidden');
-            }, 4000); // 稍微延長提示時間，因為前面有 Loading
+            }, 4000); 
         });
     </script>
 </body>
