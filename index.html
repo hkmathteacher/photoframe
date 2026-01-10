@@ -9,18 +9,16 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WebAR Camera">
     
-    <!-- PWA 主題色更新為高貴綠，讓狀態列融合 -->
     <meta name="theme-color" content="#052e16">
     
     <link rel="manifest" href="./manifest.json">
     <link rel="apple-touch-icon" href="./loading.png">
 
-    <!-- 引入優雅的草寫字體 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
+    <!-- 更換為更具貴族氣息的 Pinyon Script -->
+    <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&display=swap" rel="stylesheet">
 
-    <!-- 引入外部人像路徑檔案 -->
     <script src="./portrait-paths.js"></script>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -40,7 +38,7 @@
             -webkit-user-select: none;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
-            font-family: 'Great Vibes', cursive;
+            font-family: 'Pinyon Script', cursive; /* 更新字體 */
         }
 
         #app-frame {
@@ -82,27 +80,23 @@
             transition: opacity 0.8s ease-out;
         }
         
-        /* --- Loading 畫面背景樣式 (高貴綠 + 暗花) --- */
+        /* --- Loading 畫面背景樣式 (若隱若現的暗花) --- */
         #loading-screen {
-            /* 基底：深祖母綠 */
             background-color: #052e16; 
             
-            /* 暗花紋理：使用 CSS 漸層模擬高級壁紙質感 */
             background-image: 
-                radial-gradient(circle at 100% 50%, transparent 20%, rgba(255,255,255,0.03) 21%, rgba(255,255,255,0.03) 34%, transparent 35%, transparent),
-                radial-gradient(circle at 0% 50%, transparent 20%, rgba(255,255,255,0.03) 21%, rgba(255,255,255,0.03) 34%, transparent 35%, transparent) bottom right;
-            background-size: 60px 60px; /* 控制紋理大小 */
+                radial-gradient(circle at 100% 50%, transparent 20%, rgba(255,255,255,0.015) 21%, rgba(255,255,255,0.015) 34%, transparent 35%, transparent),
+                radial-gradient(circle at 0% 50%, transparent 20%, rgba(255,255,255,0.015) 21%, rgba(255,255,255,0.015) 34%, transparent 35%, transparent) bottom right;
+            background-size: 30px 30px; 
             
-            /* 加上一個中央暈影 (Vignette)，讓中間亮、四周暗，聚焦視覺 */
             background: 
                 radial-gradient(circle, rgba(255,255,255,0) 0%, rgba(0,0,0,0.6) 100%),
-                radial-gradient(circle at 100% 50%, transparent 20%, rgba(255,255,255,0.03) 21%, rgba(255,255,255,0.03) 34%, transparent 35%, transparent),
-                radial-gradient(circle at 0% 50%, transparent 20%, rgba(255,255,255,0.03) 21%, rgba(255,255,255,0.03) 34%, transparent 35%, transparent) bottom right,
-                #052e16; /* 最底層顏色 */
-            background-size: cover, 60px 60px, 60px 60px, cover;
+                radial-gradient(circle at 100% 50%, transparent 20%, rgba(255,255,255,0.015) 21%, rgba(255,255,255,0.015) 34%, transparent 35%, transparent),
+                radial-gradient(circle at 0% 50%, transparent 20%, rgba(255,255,255,0.015) 21%, rgba(255,255,255,0.015) 34%, transparent 35%, transparent) bottom right,
+                #052e16;
+            background-size: cover, 30px 30px, 30px 30px, cover;
         }
 
-        /* --- SVG 動畫設定 --- */
         .svg-container {
             width: 90%;
             max-width: 400px;
@@ -126,18 +120,20 @@
             animation: drawLine 4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
 
+        /* 文字動畫設定 - Pinyon Script 優化 */
         .text-style {
-            font-family: 'Great Vibes', cursive;
-            font-size: 80px; 
+            font-family: 'Pinyon Script', cursive; /* 使用新字體 */
+            font-size: 76px; /* 稍微放大，因為這款字體比較纖細 */
+            letter-spacing: 4px; /* 字距微調，這款字體不需要拉太開，保持連結感 */
             fill: url(#goldGradient); 
             fill-opacity: 0; 
             stroke: url(#goldGradient);
-            stroke-width: 1.5px;
-            stroke-dasharray: 600;
-            stroke-dashoffset: 600; 
+            stroke-width: 0.8px; /* 稍微加一點點粗度 */
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000; 
             animation: 
-                drawText 3s ease-out 1.5s forwards,
-                fillText 1.5s ease-out 4s forwards;
+                drawText 4s ease-out 1.5s forwards, 
+                fillText 2.5s ease-out 5s forwards; 
         }
 
         @keyframes drawLine {
@@ -153,12 +149,12 @@
         }
         
         .glow-effect {
-            animation: glow 2s ease-in-out infinite alternate 4.5s;
+            animation: glow 3s ease-in-out infinite alternate 5s;
         }
 
         @keyframes glow {
-            from { filter: drop-shadow(0 0 1px rgba(212, 175, 55, 0.3)); }
-            to { filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.7)); }
+            from { filter: drop-shadow(0 0 1px rgba(212, 175, 55, 0.2)); }
+            to { filter: drop-shadow(0 0 12px rgba(212, 175, 55, 0.8)); }
         }
         
         .wait-for-anim {
@@ -180,21 +176,18 @@
         <div class="svg-container glow-effect">
             <svg viewBox="0 0 600 850" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto;">
                 <defs>
-                    <!-- 金色漸層調整：為了在深綠背景上更跳，稍微調亮一點 -->
                     <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#C5A059" /> <!-- 亮金 -->
-                        <stop offset="40%" stop-color="#FFD700" /> <!-- 純金 -->
-                        <stop offset="80%" stop-color="#DAA520" /> <!-- 復古金 -->
-                        <stop offset="100%" stop-color="#B8860B" /> <!-- 暗金 -->
+                        <stop offset="0%" stop-color="#C5A059" /> 
+                        <stop offset="40%" stop-color="#FFD700" /> 
+                        <stop offset="80%" stop-color="#DAA520" /> 
+                        <stop offset="100%" stop-color="#B8860B" /> 
                     </linearGradient>
                 </defs>
 
-                <!-- 1. 人像部分 -->
                 <g id="portrait-group" transform="translate(0, 50)">
                     <!-- 內容由 portrait-paths.js 注入 -->
                 </g>
 
-                <!-- 2. 名字部分 -->
                 <text x="300" y="800" text-anchor="middle" class="text-style">
                     Cherry & Cheukyau
                 </text>
@@ -203,11 +196,13 @@
         
         <!-- 下方的狀態文字與按鈕 -->
         <div class="relative z-10 flex flex-col items-center mt-8 wait-for-anim" id="controls-area">
+            <!-- 預設顯示的 Loading 文字 -->
             <div id="loading-text" class="flex items-center gap-2 text-[#D4AF37] text-xs tracking-[0.4em] uppercase opacity-80 animate-pulse">
                 <span>Loading</span>
             </div>
             
-            <button id="start-btn" class="hidden mt-4 px-6 py-2 border border-[#D4AF37] text-[#D4AF37] rounded-full text-sm uppercase tracking-widest hover:bg-[#D4AF37] hover:text-black transition duration-300 backdrop-blur-sm">
+            <!-- 動畫結束後顯示的按鈕 (預設 hidden) -->
+            <button id="start-btn" class="hidden px-8 py-3 border border-[#D4AF37] text-[#D4AF37] rounded-full text-lg uppercase tracking-widest hover:bg-[#D4AF37] hover:text-black transition duration-300 backdrop-blur-sm shadow-[0_0_15px_rgba(212,175,55,0.3)]">
                 點擊啟動相機
             </button>
             
@@ -277,6 +272,7 @@
         const appFrame = document.getElementById('app-frame');
         const loadingScreen = document.getElementById('loading-screen'); 
         const startBtn = document.getElementById('start-btn');
+        const loadingText = document.getElementById('loading-text');
         const errorMsg = document.getElementById('error-msg');
         const controlsArea = document.getElementById('controls-area');
         
@@ -286,9 +282,6 @@
         let CANVAS_WIDTH = window.innerWidth * window.devicePixelRatio;
         let CANVAS_HEIGHT = window.innerHeight * window.devicePixelRatio;
         
-        let isCameraReady = false;
-        let isAnimationDone = false;
-
         function resizeCanvas() {
             CANVAS_WIDTH = window.innerWidth * window.devicePixelRatio;
             CANVAS_HEIGHT = window.innerHeight * window.devicePixelRatio;
@@ -313,24 +306,20 @@
             tempImg.src = src;
         }
 
-        function checkReadyToStart() {
-            if (isCameraReady && isAnimationDone) {
-                loadingScreen.classList.add('fade-out');
-                setTimeout(() => {
-                    loadingScreen.style.display = 'none';
-                }, 800); 
-            } else if (isAnimationDone && !isCameraReady) {
-                controlsArea.classList.add('anim-done');
-                if (startBtn.classList.contains('hidden') && !errorMsg.innerText) {
-                     startBtn.classList.remove('hidden');
-                }
-            }
-        }
-
+        // --- 動畫完成處理 ---
+        // 5.5 秒後執行：隱藏 Loading 文字，顯示按鈕
         setTimeout(() => {
-            isAnimationDone = true;
-            checkReadyToStart();
+            controlsArea.classList.add('anim-done');
+            loadingText.style.display = 'none'; // 隱藏 "Loading"
+            startBtn.classList.remove('hidden'); // 顯示按鈕
         }, 5500);
+
+        // --- 按鈕點擊處理 ---
+        startBtn.addEventListener('click', () => {
+            startBtn.innerText = "啟動中...";
+            startBtn.disabled = true; // 防止重複點擊
+            initCamera(); 
+        });
 
         async function initCamera(retryMode = false) {
             if (currentStream) {
@@ -360,12 +349,16 @@
                 video.play();
                 drawFrame();
                 
-                isCameraReady = true;
-                checkReadyToStart();
+                // 相機啟動成功，淡出 Loading 畫面
+                loadingScreen.classList.add('fade-out');
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                }, 800); 
                 
             } catch (err) {
                 console.error("Camera Error:", err);
                 if (!retryMode) {
+                    console.log("嘗試降級重試...");
                     initCamera(true);
                 } else {
                     showErrorUI(err);
@@ -374,20 +367,19 @@
         }
 
         function showErrorUI(err) {
-            document.getElementById('loading-text').style.display = 'none';
-            errorMsg.innerText = `相機無法啟動: ${err.name}\n請檢查權限`;
+            loadingText.style.display = 'none';
+            startBtn.classList.add('hidden'); // 隱藏啟動按鈕
+            
+            errorMsg.innerText = `相機無法啟動: ${err.name}\n請檢查瀏覽器權限`;
             errorMsg.classList.remove('hidden');
             
-            controlsArea.classList.add('anim-done');
-            startBtn.classList.remove('hidden');
-            startBtn.innerText = "重試";
-            startBtn.onclick = () => initCamera(true);
+            // 顯示重試按鈕
+            const retryBtn = document.createElement('button');
+            retryBtn.innerText = "重試";
+            retryBtn.className = "mt-4 px-6 py-2 border border-red-400 text-red-400 rounded-full text-sm uppercase";
+            retryBtn.onclick = () => location.reload();
+            controlsArea.appendChild(retryBtn);
         }
-
-        startBtn.addEventListener('click', () => {
-            initCamera(true); 
-            startBtn.classList.add('hidden');
-        });
 
         function drawFrame() {
             if (!video.paused && !video.ended) {
@@ -506,7 +498,7 @@
 
         window.addEventListener('load', () => {
             loadCurrentFilter();
-            initCamera(); 
+            // 不再自動執行 initCamera()，改由按鈕觸發
             
             setTimeout(() => {
                 const hint = document.getElementById('swipe-hint');
