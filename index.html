@@ -16,7 +16,6 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- 更換為更具貴族氣息的 Pinyon Script -->
     <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&display=swap" rel="stylesheet">
 
     <script src="./portrait-paths.js"></script>
@@ -38,19 +37,31 @@
             -webkit-user-select: none;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
-            font-family: 'Pinyon Script', cursive; /* 更新字體 */
+            font-family: 'Pinyon Script', cursive;
         }
 
+        /* --- 核心修改：鎖定 9:16 比例 --- */
         #app-frame {
             position: relative;
-            width: 100vw;
-            height: 100vh;
             background: #000;
             overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5); /* 增加一點陰影區隔黑邊 */
+            
+            /* 預設：寬度填滿，高度自動 */
+            width: 100vw;
+            height: 177.78vw; /* 100 * 16 / 9 */
+            
+            /* 限制：不能超過螢幕大小 */
+            max-width: 100vw;
+            max-height: 100vh;
         }
 
+        /* 當螢幕比較寬/短時 (Desktop/iPad)，改以高度為基準 */
         @media (min-aspect-ratio: 9/16) {
-            #app-frame { max-width: 56.25vh; }
+            #app-frame {
+                height: 100vh;
+                width: 56.25vh; /* 100 * 9 / 16 */
+            }
         }
 
         canvas {
@@ -80,7 +91,6 @@
             transition: opacity 0.8s ease-out;
         }
         
-        /* --- Loading 畫面背景樣式 (若隱若現的暗花) --- */
         #loading-screen {
             background-color: #052e16; 
             
@@ -120,15 +130,14 @@
             animation: drawLine 4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
 
-        /* 文字動畫設定 - Pinyon Script 優化 */
         .text-style {
-            font-family: 'Pinyon Script', cursive; /* 使用新字體 */
-            font-size: 76px; /* 稍微放大，因為這款字體比較纖細 */
-            letter-spacing: 4px; /* 字距微調，這款字體不需要拉太開，保持連結感 */
+            font-family: 'Pinyon Script', cursive; 
+            font-size: 76px; 
+            letter-spacing: 4px; 
             fill: url(#goldGradient); 
             fill-opacity: 0; 
             stroke: url(#goldGradient);
-            stroke-width: 0.8px; /* 稍微加一點點粗度 */
+            stroke-width: 0.8px; 
             stroke-dasharray: 1000;
             stroke-dashoffset: 1000; 
             animation: 
@@ -194,14 +203,11 @@
             </svg>
         </div>
         
-        <!-- 下方的狀態文字與按鈕 -->
         <div class="relative z-10 flex flex-col items-center mt-8 wait-for-anim" id="controls-area">
-            <!-- 預設顯示的 Loading 文字 -->
             <div id="loading-text" class="flex items-center gap-2 text-[#D4AF37] text-xs tracking-[0.4em] uppercase opacity-80 animate-pulse">
                 <span>Loading</span>
             </div>
             
-            <!-- 動畫結束後顯示的按鈕 (預設 hidden) -->
             <button id="start-btn" class="hidden px-8 py-3 border border-[#D4AF37] text-[#D4AF37] rounded-full text-lg uppercase tracking-widest hover:bg-[#D4AF37] hover:text-black transition duration-300 backdrop-blur-sm shadow-[0_0_15px_rgba(212,175,55,0.3)]">
                 點擊啟動相機
             </button>
@@ -279,18 +285,28 @@
         let animationId;
         let currentStream;
         let facingMode = 'user';
-        let CANVAS_WIDTH = window.innerWidth * window.devicePixelRatio;
-        let CANVAS_HEIGHT = window.innerHeight * window.devicePixelRatio;
+        let CANVAS_WIDTH = 1080;
+        let CANVAS_HEIGHT = 1920;
         
+        // --- 修改 1: 解析度計算 ---
+        // 為了確保拍照永遠是 9:16 且高畫質，我們不再依賴 window.innerWidth
+        // 而是依賴 appFrame 的實際大小 x devicePixelRatio
         function resizeCanvas() {
-            CANVAS_WIDTH = window.innerWidth * window.devicePixelRatio;
-            CANVAS_HEIGHT = window.innerHeight * window.devicePixelRatio;
-            canvas.width = CANVAS_WIDTH;
-            canvas.height = CANVAS_HEIGHT;
+            // 取得實際顯示的框框大小
+            const rect = appFrame.getBoundingClientRect();
+            // 設定 Canvas 內部解析度為顯示大小的 dpr 倍 (Retina 優化)
+            const dpr = window.devicePixelRatio || 1;
+            
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            
+            // 更新全域變數供繪圖使用
+            CANVAS_WIDTH = canvas.width;
+            CANVAS_HEIGHT = canvas.height;
         }
         window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
+        // 初始化時執行一次，稍後在 load 也會執行
+        
         function loadCurrentFilter() {
             let src = filterList[currentFilterIndex];
             if (useDemo) src = demoFilters[currentFilterIndex % demoFilters.length];
@@ -306,18 +322,15 @@
             tempImg.src = src;
         }
 
-        // --- 動畫完成處理 ---
-        // 5.5 秒後執行：隱藏 Loading 文字，顯示按鈕
         setTimeout(() => {
             controlsArea.classList.add('anim-done');
-            loadingText.style.display = 'none'; // 隱藏 "Loading"
-            startBtn.classList.remove('hidden'); // 顯示按鈕
+            loadingText.style.display = 'none'; 
+            startBtn.classList.remove('hidden'); 
         }, 5500);
 
-        // --- 按鈕點擊處理 ---
         startBtn.addEventListener('click', () => {
             startBtn.innerText = "啟動中...";
-            startBtn.disabled = true; // 防止重複點擊
+            startBtn.disabled = true; 
             initCamera(); 
         });
 
@@ -347,9 +360,10 @@
                 });
                 
                 video.play();
+                // 在相機準備好後，重新計算一次 Canvas 大小以確保正確
+                resizeCanvas();
                 drawFrame();
                 
-                // 相機啟動成功，淡出 Loading 畫面
                 loadingScreen.classList.add('fade-out');
                 setTimeout(() => {
                     loadingScreen.style.display = 'none';
@@ -368,12 +382,11 @@
 
         function showErrorUI(err) {
             loadingText.style.display = 'none';
-            startBtn.classList.add('hidden'); // 隱藏啟動按鈕
+            startBtn.classList.add('hidden'); 
             
             errorMsg.innerText = `相機無法啟動: ${err.name}\n請檢查瀏覽器權限`;
             errorMsg.classList.remove('hidden');
             
-            // 顯示重試按鈕
             const retryBtn = document.createElement('button');
             retryBtn.innerText = "重試";
             retryBtn.className = "mt-4 px-6 py-2 border border-red-400 text-red-400 rounded-full text-sm uppercase";
@@ -384,15 +397,20 @@
         function drawFrame() {
             if (!video.paused && !video.ended) {
                 const videoRatio = video.videoWidth / video.videoHeight;
+                // CANVAS_WIDTH / CANVAS_HEIGHT 現在嚴格保證是 9:16 (0.5625)
                 const targetRatio = CANVAS_WIDTH / CANVAS_HEIGHT;
+                
                 let sWidth, sHeight, sx, sy;
 
+                // 計算 Cover (填滿) 裁切邏輯
                 if (targetRatio > videoRatio) {
+                    // 畫布比影片寬 -> 裁切上下
                     sWidth = video.videoWidth;
                     sHeight = video.videoWidth / targetRatio;
                     sx = 0;
                     sy = (video.videoHeight - sHeight) / 2;
                 } else {
+                    // 畫布比影片瘦 (常見於 9:16 畫布 + 4:3 影片) -> 裁切左右
                     sWidth = video.videoHeight * targetRatio;
                     sHeight = video.videoHeight;
                     sx = (video.videoWidth - sWidth) / 2;
@@ -404,28 +422,16 @@
                     ctx.translate(CANVAS_WIDTH, 0);
                     ctx.scale(-1, 1);
                 }
-                ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                ctx.drawImage(
+                    video, 
+                    sx, sy, sWidth, sHeight, // 來源：已裁切
+                    0, 0, CANVAS_WIDTH, CANVAS_HEIGHT // 目標：填滿 9:16 畫布
+                );
                 ctx.restore();
 
                 if (overlayImg.complete && overlayImg.naturalHeight !== 0) {
-                    const imgW = overlayImg.naturalWidth;
-                    const imgH = overlayImg.naturalHeight;
-                    const imgRatio = imgW / imgH;
-                    const canvasRatio = CANVAS_WIDTH / CANVAS_HEIGHT;
-                    let renderW, renderH, renderX, renderY;
-
-                    if (imgRatio > canvasRatio) {
-                        renderW = CANVAS_WIDTH;
-                        renderH = CANVAS_WIDTH / imgRatio;
-                        renderX = 0;
-                        renderY = (CANVAS_HEIGHT - renderH) / 2;
-                    } else {
-                        renderH = CANVAS_HEIGHT;
-                        renderW = CANVAS_HEIGHT * imgRatio;
-                        renderX = (CANVAS_WIDTH - renderW) / 2;
-                        renderY = 0;
-                    }
-                    ctx.drawImage(overlayImg, renderX, renderY, renderW, renderH);
+                    // 濾鏡也是直接填滿這個 9:16 的畫布
+                    ctx.drawImage(overlayImg, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
                 }
                 animationId = requestAnimationFrame(drawFrame);
             }
@@ -436,7 +442,8 @@
             setTimeout(() => flash.classList.remove('flash-active'), 100);
             cancelAnimationFrame(animationId);
             try {
-                const dataURL = canvas.toDataURL('image/jpeg', 0.92);
+                // 輸出圖片
+                const dataURL = canvas.toDataURL('image/jpeg', 0.95);
                 const link = document.createElement('a');
                 link.download = `photo-${Date.now()}.jpg`;
                 link.href = dataURL;
@@ -498,7 +505,7 @@
 
         window.addEventListener('load', () => {
             loadCurrentFilter();
-            // 不再自動執行 initCamera()，改由按鈕觸發
+            resizeCanvas(); // 初始化時設定尺寸
             
             setTimeout(() => {
                 const hint = document.getElementById('swipe-hint');
