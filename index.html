@@ -5,12 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>WebAR 相機</title>
     
-    <!-- PWA 設定 (iOS) -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WebAR Camera">
     
-    <!-- PWA 設定 (Android/Desktop) -->
     <link rel="manifest" href="./manifest.json">
     <link rel="apple-touch-icon" href="./loading.png">
 
@@ -41,7 +39,6 @@
             overflow: hidden;
         }
 
-        /* 電腦版維持手機比例預覽，手機版則全螢幕 */
         @media (min-aspect-ratio: 9/16) {
             #app-frame { max-width: 56.25vh; }
         }
@@ -73,61 +70,62 @@
             transition: opacity 0.8s ease-out;
         }
         
-        /* --- SVG 動畫樣式設定 --- */
+        /* --- SVG 動畫設定 --- */
         .svg-container {
-            width: 85%;
-            max-width: 350px;
+            width: 90%; /* 加寬一點 */
+            max-width: 400px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            /* 確保在畫面上方 */
+            margin-bottom: 10vh; 
         }
 
-        /* 通用描邊動畫 */
         .draw-path {
-            fill: none !important; /* 重要：覆蓋原圖填充 */
+            fill: none !important;
             stroke: url(#goldGradient);
             stroke-linecap: round;
             stroke-linejoin: round;
         }
         
-        /* 人像部分的線條 (較粗，路徑較長) */
+        /* 人像線條 */
         .portrait-path {
-            stroke-width: 15; 
-            stroke-dasharray: 8000; 
-            stroke-dashoffset: 8000;
+            stroke-width: 18; /* 調整粗細 */
+            stroke-dasharray: 9000; 
+            stroke-dashoffset: 9000;
             animation: drawLine 4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
 
-        /* 名字部分的線條 (較細) */
+        /* 文字線條 */
         .text-path {
-            stroke-width: 1.5;
-            stroke-dasharray: 1000;
-            stroke-dashoffset: 1000;
-            animation: drawLine 3s ease-out forwards;
+            stroke-width: 2.5; /* 加粗文字 */
+            stroke-dasharray: 1500;
+            stroke-dashoffset: 1500;
+            animation: drawLine 3.5s ease-out 1s forwards; /* 延遲 1秒開始畫名字 */
         }
 
         @keyframes drawLine {
             to { stroke-dashoffset: 0; }
         }
         
-        /* 發光特效 */
         .glow-effect {
             animation: glow 2s ease-in-out infinite alternate 4s; 
         }
 
         @keyframes glow {
             from { filter: drop-shadow(0 0 1px rgba(212, 175, 55, 0.3)); }
-            to { filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.6)); }
+            to { filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.7)); }
         }
     </style>
 </head>
 <body>
 
-    <!-- SVG Loading Screen (金色筆觸動畫) -->
-    <div id="loading-screen" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center">
+    <!-- SVG Loading Screen -->
+    <div id="loading-screen" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center p-4">
         
         <div class="svg-container glow-effect">
-            <svg viewBox="0 0 600 850" xmlns="http://www.w3.org/2000/svg">
+            <!-- 調整 viewBox 以確保所有內容都看得到 -->
+            <svg viewBox="0 0 600 900" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto;">
                 <defs>
                     <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                         <stop offset="0%" stop-color="#996515" /> 
@@ -138,7 +136,8 @@
                 </defs>
 
                 <!-- 1. 人像部分 -->
-                <g transform="translate(0, 50) scale(1, 1)">
+                <!-- 修正 transform 讓圖案置中且方向正確 -->
+                <g transform="translate(0, 50)">
                     <g transform="translate(0, 600) scale(0.1, -0.1)">
                         <path class="draw-path portrait-path" d="M2549 4421 c-38 -12 -70 -31 -109 -63 -19 -15 -43 -28 -53 -28 -10 0 -32 -7 -50 -16 -71 -36 -106 -88 -127 -187 -6 -33 -20 -67 -31 -78 -14 -14 -15 -19 -5 -19 21 0 52 56 69 123 18 67 52 116 102 147 42 26 54 21 31 -12 -9 -12 -16 -29 -16 -38 1 -8 7 0 15 17 16 38 115 107 179 125 47 13 162 16 221 6 l40 -7 -35 16 c-40 18 -191 27 -231 14z"/>
                         <path class="draw-path portrait-path" d="M2875 4409 c-60 -15 -62 -26 -3 -19 99 13 235 -17 328 -73 59 -35 111 -79 120 -101 6 -15 9 -16 9 -5 2 42 -128 146 -223 180 -66 23 -177 32 -231 18z"/>
@@ -224,7 +223,8 @@
                 </g>
 
                 <!-- 2. 名字部分 (Cherry & Cheukyau) -->
-                <g transform="translate(150, 700) scale(1.4)">
+                <!-- 調整名字位置到人像下方 -->
+                <g transform="translate(150, 750) scale(1.4)">
                     <g transform="translate(30, 0)">
                         <!-- C -->
                         <path class="draw-path text-path" d="M40,20 C30,10 10,10 10,40 C10,70 30,70 45,60" />
@@ -268,9 +268,19 @@
             </svg>
         </div>
         
-        <!-- 下方的載入文字 -->
-        <div class="loading-text relative z-10 flex items-center gap-2 text-[#D4AF37] text-xs tracking-[0.4em] uppercase opacity-70 animate-pulse mt-8">
-            <span>Loading</span>
+        <!-- 下方的狀態文字與按鈕 -->
+        <div class="relative z-10 flex flex-col items-center mt-8">
+            <div id="loading-text" class="flex items-center gap-2 text-[#D4AF37] text-xs tracking-[0.4em] uppercase opacity-70 animate-pulse">
+                <span>Loading</span>
+            </div>
+            
+            <!-- 手動啟動按鈕 (預設隱藏) -->
+            <button id="start-btn" class="hidden mt-4 px-6 py-2 border border-[#D4AF37] text-[#D4AF37] rounded-full text-sm uppercase tracking-widest hover:bg-[#D4AF37] hover:text-black transition duration-300">
+                點擊啟動相機
+            </button>
+            
+            <!-- 錯誤訊息 (預設隱藏) -->
+            <p id="error-msg" class="hidden mt-4 text-red-400 text-xs px-4 text-center"></p>
         </div>
     </div>
 
@@ -303,12 +313,7 @@
     </div>
 
     <script>
-        // 設定您的圖片
-        const filterList = [
-            './cat1.png', 
-            './cat2.png'
-        ];
-        
+        const filterList = ['./cat1.png', './cat2.png'];
         const demoColors = ['#FF0000', '#00FF00'];
         const demoFilters = demoColors.map((color, i) => {
             const c = document.createElement('canvas');
@@ -324,7 +329,6 @@
         });
         
         let useDemo = false; 
-
         let currentFilterIndex = 0;
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
@@ -335,11 +339,12 @@
         const flash = document.getElementById('flash');
         const appFrame = document.getElementById('app-frame');
         const loadingScreen = document.getElementById('loading-screen'); 
+        const startBtn = document.getElementById('start-btn');
+        const errorMsg = document.getElementById('error-msg');
         
         let animationId;
         let currentStream;
         let facingMode = 'user';
-        
         let CANVAS_WIDTH = window.innerWidth * window.devicePixelRatio;
         let CANVAS_HEIGHT = window.innerHeight * window.devicePixelRatio;
 
@@ -368,77 +373,84 @@
         }
 
         function hideLoading() {
-            // 延長顯示時間，讓動畫有機會跑完
+            // 延長到 6 秒確保動畫跑完
             setTimeout(() => {
                 loadingScreen.classList.add('fade-out');
                 setTimeout(() => {
                     loadingScreen.style.display = 'none';
                 }, 800); 
-            }, 5500); 
+            }, 6000); 
         }
 
-        let touchStartX = 0;
-        let touchEndX = 0;
-        const minSwipeDistance = 50; 
-
-        appFrame.addEventListener('touchstart', e => {
-            touchStartX = e.changedTouches[0].screenX;
-        }, {passive: true});
-
-        appFrame.addEventListener('touchend', e => {
-            touchEndX = e.changedTouches[0].screenX;
-            handleSwipe();
-        }, {passive: true});
-
-        function handleSwipe() {
-            const distance = touchEndX - touchStartX;
-            const maxIndex = (useDemo ? demoFilters.length : filterList.length) - 1;
-
-            if (Math.abs(distance) > minSwipeDistance) {
-                if (distance < 0) {
-                    if (currentFilterIndex < maxIndex) {
-                        currentFilterIndex++;
-                    } else {
-                        currentFilterIndex = 0;
-                    }
-                } else {
-                    if (currentFilterIndex > 0) {
-                        currentFilterIndex--;
-                    } else {
-                        currentFilterIndex = maxIndex;
-                    }
-                }
-                loadCurrentFilter();
-            }
-        }
-
-        async function startCamera() {
+        // --- 相機啟動邏輯 (增強版) ---
+        async function initCamera(retryMode = false) {
             if (currentStream) {
                 currentStream.getTracks().forEach(track => track.stop());
             }
+
+            // 策略：預設先嘗試高畫質，如果失敗 (retryMode) 就嘗試最基本配置
             const constraints = {
                 audio: false,
-                video: {
+                video: retryMode ? { facingMode: facingMode } : {
                     facingMode: facingMode,
                     width: { ideal: 1920 },
                     height: { ideal: 1080 } 
                 }
             };
+
             try {
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 currentStream = stream;
                 video.srcObject = stream;
-                video.onloadedmetadata = () => {
-                    video.play();
-                    drawFrame();
-                    hideLoading();
-                };
+                
+                // 關鍵：必須等待 video 真正開始播放
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        resolve();
+                    };
+                });
+                
+                video.play();
+                drawFrame();
+                hideLoading();
+                
             } catch (err) {
-                console.error(err);
-                showMsg("無法開啟相機");
-                document.querySelector('.loading-text span').innerText = "相機存取失敗 (需 HTTPS)";
+                console.error("Camera Error:", err);
+                
+                if (!retryMode) {
+                    // 如果第一次失敗，嘗試降級重試
+                    console.log("嘗試降級啟動...");
+                    initCamera(true);
+                } else {
+                    // 如果還是失敗，顯示錯誤給使用者
+                    showErrorUI(err);
+                }
             }
         }
+
+        function showErrorUI(err) {
+            document.getElementById('loading-text').style.display = 'none';
+            errorMsg.innerText = `相機無法啟動: ${err.name}\n請檢查權限或使用 Safari/Chrome 開啟`;
+            errorMsg.classList.remove('hidden');
+            
+            // 顯示手動按鈕
+            startBtn.classList.remove('hidden');
+            startBtn.innerText = "重試";
+            startBtn.onclick = () => initCamera(true);
+        }
+
+        // 手動啟動按鈕監聽 (解決 iOS Safari Autoplay 限制)
+        startBtn.addEventListener('click', () => {
+            initCamera(true); // 強制用最相容模式啟動
+            startBtn.classList.add('hidden');
+        });
+
+        // 如果 3 秒後相機還沒好，顯示按鈕讓使用者手動點
+        setTimeout(() => {
+            if (loadingScreen.style.display !== 'none') {
+                startBtn.classList.remove('hidden');
+            }
+        }, 3000);
 
         function drawFrame() {
             if (!video.paused && !video.ended) {
@@ -509,8 +521,44 @@
 
         switchBtn.addEventListener('click', () => {
             facingMode = facingMode === 'user' ? 'environment' : 'user';
-            startCamera();
+            initCamera(); // 切換時也使用新的啟動邏輯
         });
+
+        // 左右滑動邏輯
+        let touchStartX = 0;
+        let touchEndX = 0;
+        const minSwipeDistance = 50; 
+
+        appFrame.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, {passive: true});
+
+        appFrame.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, {passive: true});
+
+        function handleSwipe() {
+            const distance = touchEndX - touchStartX;
+            const maxIndex = (useDemo ? demoFilters.length : filterList.length) - 1;
+
+            if (Math.abs(distance) > minSwipeDistance) {
+                if (distance < 0) {
+                    if (currentFilterIndex < maxIndex) {
+                        currentFilterIndex++;
+                    } else {
+                        currentFilterIndex = 0;
+                    }
+                } else {
+                    if (currentFilterIndex > 0) {
+                        currentFilterIndex--;
+                    } else {
+                        currentFilterIndex = maxIndex;
+                    }
+                }
+                loadCurrentFilter();
+            }
+        }
 
         function showMsg(text) {
             const msgBox = document.getElementById('message');
@@ -520,13 +568,16 @@
             msgBox.timeoutId = setTimeout(() => msgBox.classList.add('hidden'), 1500);
         }
 
+        // 程式入口
         window.addEventListener('load', () => {
-            startCamera();
-            loadCurrentFilter(); 
+            loadCurrentFilter();
+            initCamera(); // 嘗試自動啟動
+            
+            // 延遲顯示提示，避免被 loading 畫面擋住
             setTimeout(() => {
                 const hint = document.getElementById('swipe-hint');
                 if(hint) hint.classList.add('hidden');
-            }, 5000); 
+            }, 8000); 
         });
     </script>
 </body>
