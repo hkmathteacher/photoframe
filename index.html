@@ -47,10 +47,7 @@
             height: 177.78vw; 
             max-width: 100vw;
             max-height: 100vh;
-            
-            /* --- 畫面位置調整 --- */
-            /* 向上偏移 15% 的視窗高度 */
-            margin-bottom: 15vh; 
+            margin-bottom: 15vh; /* 保持畫面向上偏移 */
         }
 
         @media (min-aspect-ratio: 9/16) {
@@ -208,7 +205,8 @@
     <!-- SVG Loading Screen -->
     <div id="loading-screen" class="fixed inset-0 z-[100] flex flex-col items-center justify-center p-4">
         <div class="svg-container glow-effect">
-            <svg viewBox="0 0 600 850" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto;">
+            <!-- 修改 1: viewBox 高度從 850 改為 700，讓畫面更緊湊 -->
+            <svg viewBox="0 0 600 700" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto;">
                 <defs>
                     <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                         <stop offset="0%" stop-color="#C5A059" /> 
@@ -218,7 +216,9 @@
                     </linearGradient>
                 </defs>
                 <g id="portrait-group" transform="translate(0, 50)"></g>
-                <text x="300" y="800" text-anchor="middle" class="text-style">
+                
+                <!-- 修改 2: 文字 y 座標從 800 上調至 580，更貼近圖片 -->
+                <text x="300" y="580" text-anchor="middle" class="text-style">
                     Cherry & Cheukyau
                 </text>
             </svg>
@@ -248,12 +248,10 @@
             </button>
         </div>
 
-        <!-- 底部控制區：向上移動 (bottom-16) -->
         <div class="absolute bottom-16 left-0 w-full flex flex-col items-center z-20 gap-4">
             
             <div id="dots-bar" class="dots-container"></div>
 
-            <!-- 縮小後的拍照按鈕 (w-16 h-16) -->
             <button id="shutter-btn" class="w-16 h-16 rounded-full border-4 border-white bg-white/20 backdrop-blur-sm flex items-center justify-center active:scale-90 transition duration-150 group shadow-lg">
                 <div class="w-12 h-12 bg-white rounded-full shadow-lg group-hover:scale-95 transition"></div>
             </button>
