@@ -43,11 +43,13 @@
             background: #000;
             overflow: hidden;
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            /* 鎖定 9:16 比例邏輯 */
             width: 100vw;
             height: 177.78vw; 
             max-width: 100vw;
             max-height: 100vh;
+            
+            /* 若需要畫面向上偏移，請取消下一行註解 */
+            /* margin-bottom: 5vh; */
         }
 
         @media (min-aspect-ratio: 9/16) {
@@ -166,6 +168,40 @@
             opacity: 1;
             pointer-events: auto;
         }
+
+        /* --- 方案 A: 圓點指示器樣式 --- */
+        .dots-container {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 10px; /* 與下方拍照按鈕的距離 */
+            z-index: 30;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            border: 1px solid #D4AF37; /* 金色邊框 */
+            background-color: transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0.5;
+            /* 增加隱形點擊區域，方便手機操作 */
+            position: relative;
+        }
+        
+        .dot::after {
+            content: '';
+            position: absolute;
+            top: -10px; bottom: -10px; left: -10px; right: -10px;
+        }
+
+        .dot.active {
+            background-color: #D4AF37; /* 實心金 */
+            opacity: 1;
+            transform: scale(1.2);
+            box-shadow: 0 0 8px rgba(212, 175, 55, 0.6);
+        }
     </style>
 </head>
 <body>
@@ -213,7 +249,14 @@
             </button>
         </div>
 
-        <div class="absolute bottom-16 left-0 w-full flex justify-center items-center z-20">
+        <!-- 底部控制區 -->
+        <div class="absolute bottom-8 left-0 w-full flex flex-col items-center z-20 gap-4">
+            
+            <!-- 方案 A: 圓點指示器 -->
+            <div id="dots-bar" class="dots-container">
+                <!-- 內容由 JS 動態生成 -->
+            </div>
+
             <button id="shutter-btn" class="w-20 h-20 rounded-full border-4 border-white bg-white/20 backdrop-blur-sm flex items-center justify-center active:scale-90 transition duration-150 group shadow-lg">
                 <div class="w-16 h-16 bg-white rounded-full shadow-lg group-hover:scale-95 transition"></div>
             </button>
@@ -234,6 +277,35 @@
         }
 
         const filterList = ['./cat1.png', './cat2.png'];
+        
+        // --- 圓點邏輯 ---
+        const dotsBar = document.getElementById('dots-bar');
+
+        function initDots() {
+            dotsBar.innerHTML = ''; 
+            filterList.forEach((_, index) => {
+                const dot = document.createElement('div');
+                dot.className = `dot ${index === currentFilterIndex ? 'active' : ''}`;
+                dot.onclick = () => {
+                    currentFilterIndex = index;
+                    loadCurrentFilter();
+                };
+                dotsBar.appendChild(dot);
+            });
+        }
+
+        function updateDotsUI() {
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {
+                if (index === currentFilterIndex) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+
+        // 假資料生成
         const demoColors = ['#FF0000', '#00FF00'];
         const demoFilters = demoColors.map((color, i) => {
             const c = document.createElement('canvas');
@@ -280,7 +352,7 @@
         function loadCurrentFilter() {
             let src = filterList[currentFilterIndex];
             if (useDemo) src = demoFilters[currentFilterIndex % demoFilters.length];
-            showMsg(`濾鏡 ${currentFilterIndex + 1} / ${useDemo ? demoFilters.length : filterList.length}`);
+            showMsg(`Filter ${currentFilterIndex + 1}`);
 
             const tempImg = new Image();
             tempImg.onload = () => { overlayImg.src = src; };
@@ -289,6 +361,8 @@
                 loadCurrentFilter();
             };
             tempImg.src = src;
+            
+            updateDotsUI(); // 更新圓點狀態
         }
 
         setTimeout(() => {
@@ -331,6 +405,8 @@
                 video.play();
                 resizeCanvas();
                 drawFrame();
+                
+                initDots(); // 初始化圓點
                 
                 loadingScreen.classList.add('fade-out');
                 setTimeout(() => {
@@ -393,30 +469,20 @@
             }
         }
 
-        // --- 核心修改：使用 Web Share API 取代下載 ---
         shutterBtn.addEventListener('click', () => {
-            // 1. 閃光特效
             flash.classList.add('flash-active');
             setTimeout(() => flash.classList.remove('flash-active'), 100);
-            
-            // 2. 暫停畫面以擷取
             cancelAnimationFrame(animationId);
             
-            // 3. 將 Canvas 轉為 Blob (檔案物件)
             canvas.toBlob(async (blob) => {
                 if (!blob) {
                     showMsg("儲存失敗");
                     drawFrame();
                     return;
                 }
-
-                // 建立檔案物件
                 const file = new File([blob], `wedding-photo-${Date.now()}.jpg`, { type: "image/jpeg" });
-
-                // 檢查瀏覽器是否支援檔案分享 (Web Share API Level 2)
                 if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
                     try {
-                        // 呼叫原生分享選單
                         await navigator.share({
                             files: [file],
                             title: 'Wedding Photo',
@@ -424,25 +490,15 @@
                         });
                         showMsg("請選擇「儲存影像」");
                     } catch (err) {
-                        // 使用者取消分享或發生錯誤
-                        if (err.name !== 'AbortError') {
-                            console.error("Share failed:", err);
-                            // 如果分享失敗，退回舊版下載
-                            fallbackDownload(blob);
-                        }
+                        if (err.name !== 'AbortError') fallbackDownload(blob);
                     }
                 } else {
-                    // 電腦版或不支援分享的瀏覽器：使用傳統下載
                     fallbackDownload(blob);
                 }
-                
-                // 恢復畫面
                 drawFrame();
-
-            }, 'image/jpeg', 0.95); // 輸出品質 0.95
+            }, 'image/jpeg', 0.95);
         });
 
-        // 舊版下載邏輯 (備用)
         function fallbackDownload(blob) {
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
